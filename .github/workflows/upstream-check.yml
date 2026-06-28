@@ -1,0 +1,57 @@
+---
+name: Upstream check
+
+# yamllint disable-line rule:truthy
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    name: Check mudler/parakeet.cpp
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Get latest commit
+        id: upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHA=$(gh api repos/mudler/parakeet.cpp/commits/main --jq .sha)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Latest commit: $SHA"
+
+      - name: Open PR if changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST: ${{ steps.upstream.outputs.sha }}
+        run: |
+          set -euo pipefail
+          CURRENT=$(grep '^ARG PARAKEET_REF=' nemo-asr-cpp/Dockerfile | cut -d= -f2)
+          echo "Current: $CURRENT"
+          echo "Latest : $LATEST"
+          [ "$LATEST" = "$CURRENT" ] && echo "Up to date." && exit 0
+
+          BRANCH="upstream/parakeet-$(date +%Y%m%d)"
+          gh pr list --head "$BRANCH" --json number --jq 'length' \
+            | grep -qv '^0$' && echo "PR already open." && exit 0
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          sed -i "s|^ARG PARAKEET_REF=.*|ARG PARAKEET_REF=${LATEST}|" nemo-asr-cpp/Dockerfile
+          git add nemo-asr-cpp/Dockerfile
+          git commit -m "chore: bump parakeet.cpp ${CURRENT:0:12} → ${LATEST:0:12}"
+          git push origin "$BRANCH"
+          COMPARE="https://github.com/mudler/parakeet.cpp/compare/${CURRENT:0:12}...${LATEST:0:12}"
+          gh pr create \
+            --base main --head "$BRANCH" \
+            --title "chore: bump parakeet.cpp ${CURRENT:0:12} → ${LATEST:0:12}" \
+            --body "$(printf '## Upstream update\n\nmudler/parakeet.cpp: [%s...%s](%s)' "${CURRENT:0:12}" "${LATEST:0:12}" "$COMPARE")" \
+            --assignee saya6k
