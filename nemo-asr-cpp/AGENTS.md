@@ -40,12 +40,14 @@ applied by the Dockerfile after checkout — upstream parakeet.cpp has none).
 **We do not fork parakeet.cpp** — we track upstream and call its flat C API;
 the patch is the one deliberate, upstream-PR-shaped exception (see below).
 
-## Git / repo tracking
+## Repo structure
 
-Stage-gated by the root `.gitignore`. **This add-on:** `stage: stable` →
-tracked (registered in release-please + the scope/label/issue-template tables;
-no `/nemo-asr-cpp/` line in the root `.gitignore`). Released via release-please
-under the `nemo-asr-cpp` scope like its siblings.
+Standalone repo — source, CI, and releases live here.
+`ha-apps` references the published GHCR image via `image: ghcr.io/saya6k/app-nemo-asr-cpp`.
+
+**Stage:** stable (no `stage:` key in `config.yaml`).
+
+Release flow: push to `main` → release-drafter drafts the next patch version → publish the draft → `build.yml` pushes multi-arch GHCR images → `repository_dispatch` to ha-apps auto-updates `config.yaml`.
 
 ## Architecture (the load-bearing part)
 
