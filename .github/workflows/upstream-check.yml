@@ -23,7 +23,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          SHA=$(gh api repos/mudler/parakeet.cpp/commits/main --jq .sha)
+          DEFAULT_BRANCH=$(gh api repos/mudler/parakeet.cpp --jq .default_branch)
+          SHA=$(gh api "repos/mudler/parakeet.cpp/commits/${DEFAULT_BRANCH}" --jq .sha)
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "Latest commit: $SHA"
 
