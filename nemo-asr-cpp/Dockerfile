@@ -8,7 +8,7 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 # follow upstream — there are no release tags, so we pin a commit SHA. GGML
 # NATIVE is OFF for a portable build (ggml still picks AVX2/NEON kernels at
 # runtime), matching mudler's published CPU image.
-ARG PARAKEET_REF=e270af73b94c9a5c37ec516230219ed4580e1db6
+ARG PARAKEET_REF=1bfbebfaaf493866f49597cd3b7901959d395c60
 
 # ---- builder: compile libparakeet.so (+ ggml), then install Python deps ----
 FROM ${BUILD_FROM} AS builder
